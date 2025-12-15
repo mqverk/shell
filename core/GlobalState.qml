@@ -7,6 +7,7 @@ QtObject {
     property bool launcherOpen: false
     property bool clipboardOpen: false
     property bool sidePanelOpen: false
+    property bool wallpaperPanelOpen: false
     // --- Actions ---
     function toggleLauncher() {
         if (launcherOpen) {
@@ -37,9 +38,19 @@ QtObject {
         }
     }
 
+    function toggleWallpaperPanel() {
+        if (wallpaperPanelOpen) {
+            wallpaperPanelOpen = false;
+        } else {
+            closeAll();
+            wallpaperPanelOpen = true;
+        }
+    }
+
     function closeAll() {
         launcherOpen = false;
         clipboardOpen = false;
         sidePanelOpen = false;
+        wallpaperPanelOpen = false;
     }
 }

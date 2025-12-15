@@ -2,6 +2,7 @@ import QtQuick
 import QtQuick.Layouts
 import Quickshell
 import Quickshell.Io
+import "../../services"
 
 Item {
     id: root
@@ -10,118 +11,88 @@ Item {
     // Active wallpaper source
     property string source: ""
     property Image currentImage: img1
-
-    // --- 1. PREP: Ensure Directory Exists ---
-    // We still need this because FileView won't create folders for us.
-    Process {
-        id: dirCreator
-        command: ["mkdir", "-p", Quickshell.env("HOME") + "/.cache/mannu"]
-        running: true
-    }
-
-    // --- 2. STORAGE: FileView with JsonAdapter ---
-    FileView {
-        id: wallpaperCache
-        path: Quickshell.env("HOME") + "/.cache/mannu/wallpaper.json"
-
-        // Use the JsonAdapter as documented
-        adapter: JsonAdapter {
-            id: wallpaperAdapter
-            // This property maps to the JSON key "path"
-            property string path: ""
-        }
-
-        // LOAD: When file is read, update the UI
-        onLoaded: {
-            if (wallpaperAdapter.path && wallpaperAdapter.path !== "") {
-                console.log("[Wallpaper] Loaded:", wallpaperAdapter.path);
-                root.source = wallpaperAdapter.path;
+    
+    // Get the screen name for this wallpaper instance
+    property string screenName: screen ? screen.name : ""
+    
+    // Update wallpaper when service emits changes
+    Connections {
+        target: WallpaperService
+        
+        function onWallpaperChanged(changedScreenName, path) {
+            if (changedScreenName === screenName) {
+                console.log("[Wallpaper] Wallpaper changed for", screenName, "to", path);
+                root.source = "file://" + path;
             }
         }
     }
-
-    // --- 3. LOGIC: Update & Save ---
+    
+    // Load initial wallpaper once service is initialized
+    Connections {
+        target: WallpaperService
+        
+        function onIsInitializedChanged() {
+            if (WallpaperService.isInitialized && !root.source) {
+                var wallpaper = WallpaperService.getWallpaper(screenName);
+                if (wallpaper && wallpaper !== "") {
+                    console.log("[Wallpaper] Loading initial wallpaper for", screenName, ":", wallpaper);
+                    root.source = "file://" + wallpaper;
+                }
+            }
+        }
+    }
+    
+    Component.onCompleted: {
+        // Try to load wallpaper if service is already initialized
+        if (WallpaperService.isInitialized) {
+            var wallpaper = WallpaperService.getWallpaper(screenName);
+            if (wallpaper && wallpaper !== "") {
+                console.log("[Wallpaper] Loading wallpaper for", screenName, ":", wallpaper);
+                root.source = "file://" + wallpaper;
+            }
+        }
+    }
+    
+    // Visual Double-Buffering
     onSourceChanged: {
-        // A. Visual Double-Buffering
         if (source === "") {
             currentImage = null;
         } else {
             var nextImage = (currentImage === img1) ? img2 : img1;
             nextImage.source = root.source;
         }
-
-        // B. Save to Disk using Native API
-        // We ensure the directory process has started at least once
-        if (source !== "") {
-            // 1. Update the Adapter's internal property
-            wallpaperAdapter.path = source;
-
-            // 2. Commit the Adapter to disk
-            // This function takes the properties of JsonAdapter and writes them to the file.
-            wallpaperCache.writeAdapter();
-        }
     }
-
-    // --- 4. File Picker ---
-    Process {
-        id: pickerProcess
-        command: ["kdialog", "--title", "Select Wallpaper", "--getopenfilename", ".", "image/jpeg image/png image/webp image/svg+xml"]
-        stdout: StdioCollector {
-            onStreamFinished: {
-                var output = text.trim();
-                if (output !== "") {
-                    // This triggers onSourceChanged -> which updates Adapter -> which calls writeAdapter()
-                    root.source = "file://" + output;
-                }
-            }
-        }
-    }
-
-    // --- 5. IPC Handler ---
-    IpcHandler {
-        target: "wallpaper"
-        function setWallpaper() {
-            pickerProcess.running = true;
-        }
-    }
-    // --- 6. Visuals (Placeholder & Images) ---
+    
+    // --- Visuals (Placeholder & Images) ---
     Rectangle {
         anchors.fill: parent
         color: "#1e1e2e"
         visible: root.source === ""
         z: 10
+        
         ColumnLayout {
             anchors.centerIn: parent
             spacing: 20
+            
             Text {
                 text: "☹"
                 font.pixelSize: 64
                 color: "#f38ba8"
                 Layout.alignment: Qt.AlignHCenter
             }
+            
             Text {
-                text: "Wallpaper missing?"
+                text: "No wallpaper set"
                 color: "#cdd6f4"
                 font.bold: true
                 font.pixelSize: 24
             }
-            Rectangle {
-                Layout.preferredWidth: 200
-                Layout.preferredHeight: 40
-                radius: 20
-                color: mouseArea.pressed ? "#cba6f7" : "#313244"
-                Text {
-                    anchors.centerIn: parent
-                    text: "Select via Dolphin"
-                    color: "#cdd6f4"
-                    font.bold: true
-                }
-                MouseArea {
-                    id: mouseArea
-                    anchors.fill: parent
-                    cursorShape: Qt.PointingHandCursor
-                    onClicked: pickerProcess.running = true
-                }
+            
+            Text {
+                text: "Open the wallpaper panel to select one"
+                color: "#a6adc8"
+                font.pixelSize: 16
+                Layout.alignment: Qt.AlignHCenter
             }
         }
     }

@@ -72,6 +72,11 @@ ShellRoot {
         globalState: appState
         notifManager: notifManager
     }
+
+    WallpaperPanel {
+        globalState: appState
+    }
+
     // --- Background (Wallpaper) ---
     Background {}
 
@@ -117,6 +122,14 @@ ShellRoot {
         target: "sidePanel"
         function toggle() {
             appState.toggleSidePanel();
+        }
+    }
+
+    // Wallpaper Panel Toggle
+    IpcHandler {
+        target: "wallpaperpanel"
+        function toggle() {
+            appState.toggleWallpaperPanel();
         }
     }
 

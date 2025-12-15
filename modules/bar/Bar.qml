@@ -1,5 +1,7 @@
 import QtQuick
 import QtQuick.Layouts
+import Quickshell
+import Quickshell.Io
 import Quickshell.Hyprland
 import "../../core"
 
@@ -254,6 +256,42 @@ Rectangle {
                     font.pixelSize: fontSize - 1
                     font.family: fontFamily
                     font.bold: true
+                }
+            }
+        }
+
+        // Wallpaper Selector
+        Rectangle {
+            Layout.preferredHeight: 26
+            Layout.preferredWidth: 26
+            radius: height / 2
+            color: "transparent"
+            border.color: colors.muted
+            border.width: 1
+            
+            Text {
+                anchors.centerIn: parent
+                text: "󰸉"
+                font.pixelSize: 16
+                font.family: "Symbols Nerd Font"
+                color: colors.fg
+            }
+            
+            Process {
+                id: wallpaperIpcProcess
+                command: ["quickshell", "ipc", "-c", "mannu", "call", "wallpaperpanel", "toggle"]
+            }
+            
+            MouseArea {
+                anchors.fill: parent
+                cursorShape: Qt.PointingHandCursor
+                hoverEnabled: true
+                
+                onEntered: parent.color = Qt.rgba(colors.purple.r, colors.purple.g, colors.purple.b, 0.2)
+                onExited: parent.color = "transparent"
+                
+                onClicked: {
+                    wallpaperIpcProcess.running = true
                 }
             }
         }
