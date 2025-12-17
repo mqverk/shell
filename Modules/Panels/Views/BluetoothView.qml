@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import qs.Widgets
+import qs.Services
 
 Control {
     id: root
@@ -26,7 +27,7 @@ Control {
                 width: 32
                 height: 32
                 radius: 10
-                color: backBtn.containsMouse ? theme.tile : "transparent"
+                color: backBtn.hovered ? theme.tile : "transparent"
                 
                 Text {
                     anchors.centerIn: parent
@@ -49,22 +50,36 @@ Control {
             
             Item { Layout.fillWidth: true }
             
-
             Rectangle {
                 width: 44
                 height: 24
                 radius: 12
-                color: theme.accentActive
+                color: BluetoothService.enabled ? theme.accentActive : theme.surface
+                border.width: BluetoothService.enabled ? 0 : 1
+                border.color: theme.border
                 
                 Rectangle {
-                    x: 22
+                    x: BluetoothService.enabled ? 22 : 2
                     anchors.verticalCenter: parent.verticalCenter
                     width: 20
                     height: 20
                     radius: 10
-                    color: "#FFFFFF"
+                    color: BluetoothService.enabled ? "#FFFFFF" : theme.subtext
+                    Behavior on x { NumberAnimation { duration: 150 } }
+                }
+
+                TapHandler {
+                    onTapped: BluetoothService.toggleBluetooth()
                 }
             }
+        }
+        
+        Text {
+            visible: !BluetoothService.enabled
+            text: "Bluetooth is Off"
+            color: theme.muted
+            anchors.centerIn: parent
+            Layout.minimumHeight: 100
         }
 
         ListView {
@@ -72,15 +87,22 @@ Control {
             Layout.fillHeight: true
             clip: true
             spacing: 4
-            model: 3 // Mock model
+            visible: BluetoothService.enabled
+            model: BluetoothService.devices
             
             delegate: Rectangle {
                 width: parent.width
                 height: 60
                 radius: 12
-                color: hoverHandler.containsMouse ? Qt.rgba(theme.tile.r, theme.tile.g, theme.tile.b, 0.5) : "transparent"
+                color: hoverHandler.hovered ? Qt.rgba(theme.tile.r, theme.tile.g, theme.tile.b, 0.5) : "transparent"
                 
                 HoverHandler { id: hoverHandler }
+                TapHandler {
+                    onTapped: {
+                        if (modelData.connected) modelData.disconnect()
+                        else modelData.connect()
+                    }
+                }
                 
                 RowLayout {
                     anchors.fill: parent
@@ -91,21 +113,23 @@ Control {
                         text: "󰂯"
                         font.family: "Symbols Nerd Font"
                         font.pixelSize: 20
-                        color: index === 0 ? theme.accentActive : theme.secondary
+                        color: modelData.connected ? theme.accentActive : theme.secondary
                     }
                     
                     ColumnLayout {
                         spacing: 2
                         Layout.fillWidth: true
                         Text {
-                            text: index === 0 ? "JBL Flip 6" : "MX Master 3S"
+                            text: modelData.name || modelData.address
                             color: theme.text
                             font.pixelSize: 14
                             font.bold: true
+                            elide: Text.ElideRight
+                            Layout.fillWidth: true
                         }
                         Text {
-                            text: index === 0 ? "Connected" : "Saved"
-                            color: index === 0 ? theme.accentActive : theme.muted
+                            text: modelData.connected ? "Connected" : (modelData.paired ? "Paired" : "Available")
+                            color: modelData.connected ? theme.accentActive : theme.muted
                             font.pixelSize: 12
                         }
                     }

@@ -98,9 +98,9 @@ ColumnLayout {
             Layout.fillWidth: true
             implicitHeight: 64
             label: "WiFi"
-            sublabel: "Connected"
+            sublabel: NetworkService.wifiEnabled ? (NetworkService.active ? NetworkService.active.ssid : "On") : "Off"
             icon: "󰖩"
-            active: true
+            active: NetworkService.wifiEnabled
             showChevron: true
             theme: root.theme
             
@@ -111,8 +111,7 @@ ColumnLayout {
                     if (mouse.button === Qt.RightButton) {
                         root.requestWifiMenu()
                     } else {
-                        parent.active = !parent.active
-                        parent.sublabel = parent.active ? "Connected" : "Off"
+                        NetworkService.toggleWifi()
                     }
                 }
             }
@@ -123,9 +122,9 @@ ColumnLayout {
             Layout.fillWidth: true
             implicitHeight: 64
             label: "Bluetooth"
-            sublabel: "On"
+            sublabel: BluetoothService.enabled ? (BluetoothService.connectedDevices.length > 0 ? BluetoothService.connectedDevices[0].name : "On") : "Off"
             icon: "󰂯"
-            active: true
+            active: BluetoothService.enabled
             showChevron: true
             theme: root.theme
             
@@ -136,8 +135,7 @@ ColumnLayout {
                     if (mouse.button === Qt.RightButton) {
                         root.requestBluetoothMenu()
                     } else {
-                        parent.active = !parent.active
-                        parent.sublabel = parent.active ? "On" : "Off"
+                        BluetoothService.toggleBluetooth()
                     }
                 }
             }

@@ -3,6 +3,7 @@ import QtQuick.Layouts
 import QtQuick.Controls
 import Quickshell
 import qs.Widgets
+import qs.Services
 
 Control {
     id: root
@@ -26,7 +27,7 @@ Control {
                 width: 32
                 height: 32
                 radius: 10
-                color: backBtn.containsMouse ? theme.tile : "transparent"
+                color: backBtn.hovered ? theme.tile : "transparent"
                 
                 Text {
                     anchors.centerIn: parent
@@ -49,32 +50,40 @@ Control {
             
             Item { Layout.fillWidth: true }
             
-
+            // Toggle Switch
             Rectangle {
                 width: 40
                 height: 20
                 radius: 10
-                color: theme.accentActive
+                color: NetworkService.wifiEnabled ? theme.accentActive : theme.surface
+                border.width: NetworkService.wifiEnabled ? 0 : 1
+                border.color: theme.border
                 
                 Rectangle {
-                    x: parent.width - width - 2
+                    x: NetworkService.wifiEnabled ? parent.width - width - 2 : 2
                     anchors.verticalCenter: parent.verticalCenter
                     width: 16
                     height: 16
                     radius: 8
-                    color: theme.bg
+                    color: NetworkService.wifiEnabled ? theme.bg : theme.subtext
+                    Behavior on x { NumberAnimation { duration: 150 } }
+                }
+                
+                TapHandler {
+                    onTapped: NetworkService.toggleWifi()
                 }
             }
         }
 
-
+        // Active Network Card
         Rectangle {
             Layout.fillWidth: true
             implicitHeight: 64
             radius: 14
             color: theme.surface
             border.width: 1
-            border.color: theme.accent
+            border.color: NetworkService.active ? theme.accent : theme.border
+            visible: NetworkService.wifiEnabled
             
             RowLayout {
                 anchors.fill: parent
@@ -99,14 +108,16 @@ Control {
                 ColumnLayout {
                     spacing: 2
                     Text {
-                        text: "Home_WiFi_5G"
+                        text: NetworkService.active ? NetworkService.active.ssid : "Not Connected"
                         color: theme.text
                         font.bold: true
                         font.pixelSize: 14
+                        elide: Text.ElideRight
+                        Layout.maximumWidth: 180
                     }
                     Text {
-                        text: "Connected"
-                        color: theme.accentActive
+                        text: NetworkService.active ? "Connected" : "Disconnected"
+                        color: NetworkService.active ? theme.accentActive : theme.muted
                         font.pixelSize: 12
                     }
                 }
@@ -118,6 +129,7 @@ Control {
                     font.family: "Symbols Nerd Font"
                     font.pixelSize: 16
                     color: theme.accentActive
+                    visible: NetworkService.active
                 }
             }
         }
@@ -125,11 +137,12 @@ Control {
         Text {
             Layout.topMargin: 20
             Layout.bottomMargin: 8
-            text: "Available Networks"
+            text: NetworkService.scanning ? "Scanning..." : "Available Networks"
             color: theme.muted
             font.pixelSize: 12
             font.bold: true
             Layout.leftMargin: 4
+            visible: NetworkService.wifiEnabled
         }
 
         ListView {
@@ -138,15 +151,26 @@ Control {
             Layout.minimumHeight: 200
             clip: true
             spacing: 4
-            model: 5 // Mock model
+            visible: NetworkService.wifiEnabled
+            
+            model: NetworkService.networks
             
             delegate: Rectangle {
+                // Filter out active network from list to avoid duplication if desired, 
+                // but usually fine to show it.
                 width: parent.width
-                height: 52
+                visible: !modelData.active
+                height: visible ? 52 : 0
                 radius: 10
-                color: hoverHandler.containsMouse ? theme.tile : "transparent"
+                color: hoverHandler.hovered ? theme.tile : "transparent"
                 
                 HoverHandler { id: hoverHandler }
+                TapHandler {
+                    onTapped: {
+                        // TODO: Password Input
+                        NetworkService.connectToNetwork(modelData.ssid, "")
+                    }
+                }
                 
                 RowLayout {
                     anchors.fill: parent
@@ -154,6 +178,7 @@ Control {
                     anchors.leftMargin: 12
                     anchors.rightMargin: 12
                     spacing: 14
+                    visible: parent.visible
                     
                     Text {
                         text: "󰖩"
@@ -163,20 +188,28 @@ Control {
                     }
                     
                     Text {
-                        text: "Neighbor_Net_" + index
+                        text: modelData.ssid
                         color: theme.text
                         font.pixelSize: 14
                         Layout.fillWidth: true
+                        elide: Text.ElideRight
                     }
                     
                     Text {
-                        text: "󰌾"
+                        text: modelData.isSecure ? "󰌾" : ""
                         font.family: "Symbols Nerd Font"
                         font.pixelSize: 14
                         color: theme.muted
                     }
                 }
             }
+        }
+        
+        Text {
+            visible: !NetworkService.wifiEnabled
+            text: "Wi-Fi is Off"
+            color: theme.muted
+            anchors.centerIn: parent
         }
     }
 }
