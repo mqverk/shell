@@ -9,6 +9,11 @@ ColumnLayout {
     id: root
     width: 320
     spacing: 0
+    // Enforce fixed maximum panel height and prefer 280px
+    Layout.preferredHeight: 280
+    Layout.minimumHeight: 100
+    Layout.maximumHeight: 280
+    clip: true
     
     required property var notifManager
     required property var theme
@@ -76,10 +81,10 @@ ColumnLayout {
     ListView {
         id: notifList
         Layout.fillWidth: true
+        // Let the parent ColumnLayout constrain height (max 280px).
+        // Do NOT set implicitHeight from content so the parent won't expand.
         Layout.fillHeight: true
-
-        implicitHeight: contentItem.childrenRect.height
-        Layout.minimumHeight: 100 
+        Layout.minimumHeight: 280
         
         clip: true
         spacing: 10
