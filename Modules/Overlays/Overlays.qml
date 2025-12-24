@@ -42,6 +42,7 @@ Item {
         id: powerMenu
         isOpen: root.context.appState.powerMenuOpen
         globalState: root.context.appState
+        colors: root.context.colors
     }
 
     InfoPanel {

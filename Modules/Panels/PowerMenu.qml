@@ -4,12 +4,15 @@ import QtQuick.Controls
 import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Wayland
+import Quickshell.Io
+import qs.Core
 
 PanelWindow {
     id: root
 
     property bool isOpen: false
     required property var globalState
+    required property Colors colors
 
     anchors { top: true; bottom: true; left: true; right: true }
     color: "transparent"
@@ -18,196 +21,138 @@ PanelWindow {
     WlrLayershell.layer: WlrLayer.Overlay
     WlrLayershell.namespace: "matte-power-menu"
     WlrLayershell.exclusiveZone: -1
-    // WlrLayershell.keyboardFocus: WlrLayershell.KeyboardFocus.OnDemand
+    WlrLayershell.keyboardFocus: WlrKeyboardFocus.Exclusive
 
-    Keys.onEscapePressed: globalState.powerMenuOpen = false
+    onVisibleChanged: {
+        if (visible) {
+            eventHandler.forceActiveFocus()
+        }
+    }
 
-    // Dimmer with blur
+    FocusScope {
+        id: eventHandler
+        anchors.fill: parent
+        focus: true
+
+        Keys.onEscapePressed: globalState.powerMenuOpen = false
+        Keys.onLeftPressed: {
+            currentIndex = (currentIndex - 1 + buttonsModel.count) % buttonsModel.count
+        }
+        Keys.onRightPressed: {
+            currentIndex = (currentIndex + 1) % buttonsModel.count
+        }
+        Keys.onReturnPressed: {
+            runCommand(buttonsModel.get(currentIndex).command)
+        }
+    }
+
+    property int currentIndex: 2
+
+    ListModel {
+        id: buttonsModel
+        ListElement { name: "Lock"; icon: "󰌾"; command: "loginctl lock-session" }
+        ListElement { name: "Suspend"; icon: "󰒲"; command: "systemctl suspend" }
+        ListElement { name: "Shutdown"; icon: "󰐥"; command: "systemctl poweroff" }
+        ListElement { name: "Reboot"; icon: "󰜉"; command: "systemctl reboot" }
+        ListElement { name: "Logout"; icon: "󰍃"; command: "loginctl terminate-user $USER" }
+    }
+    
+    function runCommand(cmd) {
+        // Resolve environment variables if needed
+        if (cmd.includes("$USER")) {
+            cmd = cmd.replace("$USER", Quickshell.env("USER"))
+        }
+
+        console.log("PowerMenu: Executing command:", cmd)
+        Quickshell.execDetached(["sh", "-c", cmd])
+        globalState.powerMenuOpen = false
+    }
+
+    // Dimmer
     Rectangle {
         anchors.fill: parent
         color: "#000000"
-        opacity: isOpen ? 0.9 : 0
-        
-        Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutExpo } }
+        opacity: isOpen ? 0.6 : 0
+        Behavior on opacity { NumberAnimation { duration: 200 } }
         
         MouseArea {
             anchors.fill: parent
             onClicked: globalState.powerMenuOpen = false
         }
-        
-        layer.enabled: true
-        layer.effect: FastBlur {
-            radius: 32
-        }
     }
 
-    // Content Container with fade-in
-    Item {
+    // Centered Row
+    Row {
         anchors.centerIn: parent
-        width: buttonsGrid.width
-        height: contentLayout.height
-        opacity: isOpen ? 1 : 0
-        scale: isOpen ? 1 : 0.95
+        spacing: 30
         
-        Behavior on opacity { NumberAnimation { duration: 120; easing.type: Easing.OutExpo } }
-        Behavior on scale { NumberAnimation { duration: 180; easing.type: Easing.OutBack } }
+        // Smoothly animate sibling movement
+        move: Transition {
+            NumberAnimation { properties: "x"; duration: 250; easing.type: Easing.OutExpo }
+        }
         
-        ColumnLayout {
-            id: contentLayout
-            spacing: 32
+        Repeater {
+            model: buttonsModel
             
-            // Header
-            ColumnLayout {
-                Layout.alignment: Qt.AlignHCenter
-                spacing: 8
+            delegate: Rectangle {
+                id: delegateRoot
+                required property string name
+                required property string icon
+                required property string command
+                required property int index
                 
-                Text {
-                    text: "Power Options"
-                    font.pixelSize: 28
-                    font.weight: Font.Bold
-                    color: "#E8EAF0"
-                    Layout.alignment: Qt.AlignHCenter
+                property bool isSelected: root.currentIndex === index
+                property bool isHovered: mouseArea.containsMouse
+                
+                width: isSelected || isHovered ? 140 : 100
+                height: 140
+                radius: 24
+                
+                // Ensure the selected item is visually on top during any overlap/transition
+                z: isSelected || isHovered ? 10 : 1
+                
+                color: (isSelected || isHovered) ? root.colors.accent : root.colors.surface
+                border.width: 1
+                border.color: (isSelected || isHovered) ? root.colors.accent : root.colors.border
+                
+                Behavior on width { NumberAnimation { duration: 250; easing.type: Easing.OutExpo } }
+                Behavior on color { ColorAnimation { duration: 200 } }
+                Behavior on border.color { ColorAnimation { duration: 200 } }
+                
+                // Content
+                ColumnLayout {
+                    anchors.centerIn: parent
+                    spacing: 8
+                    
+                    Text {
+                        text: delegateRoot.icon
+                        font.pixelSize: 42
+                        font.family: "Symbols Nerd Font"
+                        color: (delegateRoot.isSelected || delegateRoot.isHovered) ? root.colors.bg : root.colors.text
+                        Layout.alignment: Qt.AlignHCenter
+                    }
+                    
+                    Text {
+                        text: delegateRoot.name
+                        font.pixelSize: 14
+                        font.weight: Font.Bold
+                        color: (delegateRoot.isSelected || delegateRoot.isHovered) ? root.colors.bg : root.colors.text
+                        opacity: (delegateRoot.isSelected || delegateRoot.isHovered) ? 1 : 0
+                        visible: opacity > 0
+                        Layout.alignment: Qt.AlignHCenter
+                        
+                        Behavior on opacity { NumberAnimation { duration: 200 } }
+                    }
                 }
                 
-                Text {
-                    text: "Choose an action"
-                    font.pixelSize: 14
-                    color: "#9BA3B8"
-                    Layout.alignment: Qt.AlignHCenter
+                MouseArea {
+                    id: mouseArea
+                    anchors.fill: parent
+                    hoverEnabled: true
+                    onEntered: root.currentIndex = index
+                    onClicked: root.runCommand(delegateRoot.command)
                 }
             }
-            
-            // Buttons Grid
-            GridLayout {
-                id: buttonsGrid
-                columns: 3
-                rowSpacing: 20
-                columnSpacing: 20
-                Layout.alignment: Qt.AlignHCenter
-            
-            PowerButton {
-                label: "Lock"
-                icon: "󰌾"
-                accentColor: "#60A5FA"
-                onClicked: globalState.powerMenuOpen = false
-            }
-            
-            PowerButton {
-                label: "Reboot"
-                icon: "󰜉"
-                accentColor: "#F59E0B"
-                onClicked: globalState.powerMenuOpen = false
-            }
-            
-            PowerButton {
-                label: "Shutdown"
-                icon: "󰐥"
-                accentColor: "#EF4444"
-                onClicked: globalState.powerMenuOpen = false
-            }
-            
-            PowerButton {
-                label: "Logout"
-                icon: "󰍃"
-                accentColor: "#8B9DC3"
-                onClicked: globalState.powerMenuOpen = false
-            }
-            
-            PowerButton {
-                label: "Suspend"
-                icon: "󰒲"
-                accentColor: "#A78BFA"
-                onClicked: globalState.powerMenuOpen = false
-            }
-            
-            PowerButton {
-                label: "Hibernate"
-                icon: "󰋊"
-                accentColor: "#6366F1"
-                onClicked: globalState.powerMenuOpen = false
-            }
-        }
-    }
-}
-    
-    component PowerButton: Rectangle {
-        property string label: ""
-        property string icon: ""
-        property color accentColor: "#A78BFA"
-        signal clicked()
-        
-        width: 160
-        height: 180
-        radius: 20
-        
-        color: btnArea.containsMouse ? "#3A3F4B" : "#2F333D"
-        border.width: 1
-        border.color: btnArea.containsMouse ? accentColor : "#2F333D"
-        
-        scale: btnArea.pressed ? 0.96 : (btnArea.containsMouse ? 1.03 : 1.0)
-        
-        Behavior on color { ColorAnimation { duration: 200 } }
-        Behavior on border.color { ColorAnimation { duration: 200 } }
-        Behavior on scale { NumberAnimation { duration: 200; easing.type: Easing.OutQuad } }
-        
-        // Glow effect on hover
-        Rectangle {
-            anchors.fill: parent
-            radius: parent.radius
-            color: "transparent"
-            border.width: 2
-            border.color: accentColor
-            opacity: btnArea.containsMouse ? 0.4 : 0
-            
-            Behavior on opacity { NumberAnimation { duration: 200 } }
-        }
-        
-        layer.enabled: true
-        layer.effect: DropShadow {
-            transparentBorder: true
-            horizontalOffset: 0
-            verticalOffset: btnArea.containsMouse ? 12 : 8
-            radius: btnArea.containsMouse ? 32 : 24
-            samples: 33
-            color: btnArea.containsMouse ? "#00000080" : "#00000050"
-        }
-        
-        ColumnLayout {
-            anchors.fill: parent
-            anchors.margins: 20
-            spacing: 12
-            
-            Item { Layout.fillHeight: true }
-            
-            Text {
-                text: icon
-                font.pixelSize: 40
-                font.family: "Symbols Nerd Font"
-                color: accentColor
-                Layout.alignment: Qt.AlignHCenter
-                
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-            
-            Text {
-                text: label
-                font.pixelSize: 14
-                font.weight: Font.Medium
-                color: btnArea.containsMouse ? "#FFFFFF" : "#E8EAF0"
-                Layout.alignment: Qt.AlignHCenter
-                
-                Behavior on color { ColorAnimation { duration: 200 } }
-            }
-            
-            Item { Layout.fillHeight: true }
-        }
-        
-        MouseArea {
-            id: btnArea
-            anchors.fill: parent
-            hoverEnabled: true
-            cursorShape: Qt.PointingHandCursor
-            onClicked: parent.clicked()
         }
     }
 }
