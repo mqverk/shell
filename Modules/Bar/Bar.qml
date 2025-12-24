@@ -148,16 +148,18 @@ Rectangle {
 
         VerticalDivider {}
 
-        // 4. Matugen-Themed Media Toggle Button (Connected to MprisService)
+        // 4. Enhanced Media Pill (Chip Style)
         Rectangle {
             id: mediaToggleButton
             Layout.preferredHeight: 26
-            Layout.preferredWidth: Math.min(mediaRow.implicitWidth + 24, 250) // Cap max width
+            Layout.preferredWidth: Math.min(mediaRow.implicitWidth + 22, 250)
             radius: height / 2
             
-            // Using Matugen colors: accent as primary, accentActive for hover
-            color: mediaMouse.containsMouse ? colors.accentActive : colors.accent
-            border.color: Qt.rgba(colors.accent.r, colors.accent.g, colors.accent.b, 0.4)
+            // Chip Style: Semi-transparent accent background
+            color: mediaMouse.containsMouse ? Qt.rgba(colors.accent.r, colors.accent.g, colors.accent.b, 0.25) 
+                                            : Qt.rgba(colors.accent.r, colors.accent.g, colors.accent.b, 0.15)
+            
+            border.color: Qt.rgba(colors.accent.r, colors.accent.g, colors.accent.b, 0.5)
             border.width: 1
 
             Behavior on color { ColorAnimation { duration: 150 } }
@@ -168,25 +170,33 @@ Rectangle {
                 id: mediaRow
                 anchors.centerIn: parent
                 spacing: 8
-                width: parent.width - 20
+                width: parent.width - 12
 
-                Text {
-                    // Toggle icon based on service state
-                    text: MprisService.isPlaying ? "󰏤" : "󰐊" 
-                    font.family: "Symbols Nerd Font"
-                    font.pixelSize: 14
-                    color: colors.bg
-                    font.bold: true
+                // Circular Play/Pause Indicator
+                Rectangle {
+                    Layout.preferredWidth: 20
+                    Layout.preferredHeight: 20
+                    Layout.leftMargin: 4
+                    radius: 10
+                    color: colors.accent // Solid accent circle
+                    
+                    Text {
+                        anchors.centerIn: parent
+                        text: MprisService.isPlaying ? "󰏤" : "󰐊" 
+                        font.family: "Symbols Nerd Font"
+                        font.pixelSize: 10
+                        color: colors.bg // Icon color (contrasts with accent)
+                        anchors.horizontalCenterOffset: MprisService.isPlaying ? 0 : 1
+                    }
                 }
 
                 Text {
-                    // Bind title from service
                     text: MprisService.title !== "" ? MprisService.title : "No Media"
                     font.family: fontFamily
-                    font.pixelSize: fontSize - 3
+                    font.pixelSize: fontSize - 2
                     font.bold: true
-                    color: colors.bg
-                    opacity: 0.95
+                    color: colors.fg // Text color (contrasts with bar background)
+                    opacity: 0.9
                     
                     Layout.fillWidth: true
                     elide: Text.ElideRight
