@@ -2,142 +2,253 @@ import QtQuick
 import QtQuick.Controls
 import QtQuick.Layouts
 import qs.Core
-import qs.Services
+import "../../../../Services" 
 
 ColumnLayout {
     id: root
 
+    // Required property: pass your theme object when calling this component
     required property var theme
 
     spacing: 16
 
+    // --- Main Weather Card ---
     Rectangle {
         Layout.fillWidth: true
-        Layout.preferredHeight: 110
-        radius: 20
-        border.color: Qt.rgba(theme.blue.r, theme.blue.g, theme.blue.b, 0.3)
+        Layout.preferredHeight: 140
+        radius: 24
+        border.color: Qt.rgba(theme.blue.r, theme.blue.g, theme.blue.b, 0.2)
         border.width: 1
+        clip: true
+
+        gradient: Gradient {
+            GradientStop { position: 0.0; color: Qt.rgba(theme.blue.r, theme.blue.g, theme.blue.b, 0.15) }
+            GradientStop { position: 1.0; color: Qt.rgba(theme.purple.r, theme.purple.g, theme.purple.b, 0.15) }
+        }
 
         RowLayout {
             anchors.fill: parent
-            anchors.margins: 16
-            spacing: 20
+            anchors.margins: 24
+            spacing: 24
 
-            Text {
-                text: WeatherService.icon
-                font.family: "Symbols Nerd Font"
-                font.pixelSize: 48
-                color: theme.fg
+            // Weather Icon (Large)
+            Item {
+                Layout.preferredWidth: 64
+                Layout.preferredHeight: 64
+                Layout.alignment: Qt.AlignVCenter
+                
+                Text {
+                    anchors.centerIn: parent
+                    text: WeatherService.icon
+                    font.family: "Symbols Nerd Font"
+                    font.pixelSize: 64
+                    color: theme.accent
+                    style: Text.Outline
+                    styleColor: Qt.rgba(0,0,0,0.1)
+                }
             }
 
+            // Text Info
             ColumnLayout {
                 Layout.fillWidth: true
-                spacing: 2
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 4
 
                 Text {
                     text: WeatherService.temperature
                     color: theme.fg
                     font.bold: true
-                    font.pixelSize: 28
+                    font.pixelSize: 42
                 }
 
                 Text {
-                    text: WeatherService.condition
+                    text: WeatherService.conditionText
                     color: theme.subtext
-                    font.pixelSize: 13
+                    font.pixelSize: 14
+                    font.capitalization: Font.Capitalize
+                    elide: Text.ElideRight
+                    Layout.fillWidth: true
                 }
 
+                // Location Row
+                RowLayout {
+                    Layout.topMargin: 6
+                    spacing: 6
+                    
+                    Text {
+                        text: ""
+                        color: theme.blue
+                        font.family: "Symbols Nerd Font"
+                        font.pixelSize: 12
+                    }
+                    Text {
+                        text: WeatherService.city
+                        color: theme.subtext
+                        font.pixelSize: 12
+                        font.bold: true
+                        opacity: 0.9
+                    }
+                }
             }
-
         }
-
-        gradient: Gradient {
-            GradientStop {
-                position: 0
-                color: Qt.rgba(theme.blue.r, theme.blue.g, theme.blue.b, 0.2)
-            }
-
-            GradientStop {
-                position: 1
-                color: Qt.rgba(theme.purple.r, theme.purple.g, theme.purple.b, 0.2)
-            }
-
-        }
-
     }
 
+    // --- Details Grid ---
     GridLayout {
         Layout.fillWidth: true
         columns: 2
-        rowSpacing: 10
-        columnSpacing: 10
+        rowSpacing: 12
+        columnSpacing: 12
 
-        Repeater {
-            // Mock
-            // Mock
+        WeatherDetailItem {
+            icon: "󰖎"
+            label: "Humidity"
+            value: WeatherService.humidity
+            iconTint: theme.blue
+        }
 
-            model: [{
-                "icon": "󰖎",
-                "label": "Humidity",
-                "val": WeatherService.humidity
-            }, {
-                "icon": "󰖝",
-                "label": "Wind",
-                "val": WeatherService.wind
-            }, {
-                "icon": "󰖒",
-                "label": "Pressure",
-                "val": "1012 hPa"
-            }, {
-                "icon": "󰖕",
-                "label": "UV Index",
-                "val": "3"
-            }]
+        WeatherDetailItem {
+            icon: "󰖝"
+            label: "Wind"
+            value: WeatherService.wind
+            iconTint: theme.cyan
+        }
 
-            Rectangle {
-                required property var modelData
+        WeatherDetailItem {
+            icon: "󰖒"
+            label: "Pressure"
+            value: WeatherService.pressure
+            iconTint: theme.green
+        }
 
-                Layout.fillWidth: true
-                Layout.preferredHeight: 60
-                radius: 12
-                color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.5)
+        WeatherDetailItem {
+            icon: "󰖕"
+            label: "UV Index"
+            value: WeatherService.uvIndex
+            iconTint: theme.yellow
+        }
+    }
 
-                RowLayout {
-                    anchors.fill: parent
-                    anchors.margins: 12
-                    spacing: 10
+    // --- Weekly Forecast Section (Horizontal Square Cards) ---
+    ColumnLayout {
+        Layout.fillWidth: true
+        Layout.topMargin: 12
+        spacing: 12
 
-                    Text {
-                        text: modelData.icon
-                        font.family: "Symbols Nerd Font"
-                        font.pixelSize: 20
-                        color: theme.accent
-                    }
+        Text {
+            text: "5-Day Forecast"
+            color: theme.fg
+            font.bold: true
+            font.pixelSize: 15
+            opacity: 0.9
+            Layout.leftMargin: 4
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            spacing: 10
+
+            Repeater {
+                model: WeatherService.forecastModel
+
+                Rectangle {
+                    required property var modelData
+                    Layout.fillWidth: true
+                    Layout.preferredHeight: 110 // Height to create a square-ish aspect ratio
+                    radius: 16
+                    color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.4)
+                    border.color: Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.08)
+                    border.width: 1
 
                     ColumnLayout {
-                        spacing: 0
+                        anchors.centerIn: parent
+                        spacing: 8
 
+                        // Day Name
                         Text {
-                            text: modelData.label
+                            text: modelData.day
                             color: theme.subtext
-                            font.pixelSize: 10
+                            font.pixelSize: 13
+                            font.bold: true
+                            Layout.alignment: Qt.AlignHCenter
                         }
 
+                        // Weather Icon
                         Text {
-                            text: modelData.val
+                            text: modelData.icon
+                            font.family: "Symbols Nerd Font"
+                            color: theme.accent
+                            font.pixelSize: 28
+                            Layout.alignment: Qt.AlignHCenter
+                        }
+
+                        // Temperature Range
+                        Text {
+                            text: modelData.max + " / " + modelData.min
                             color: theme.fg
                             font.pixelSize: 12
                             font.bold: true
+                            Layout.alignment: Qt.AlignHCenter
                         }
-
                     }
-
                 }
-
             }
-
         }
-
     }
 
+    // --- Reusable Detail Component ---
+    component WeatherDetailItem: Rectangle {
+        property string icon
+        property string label
+        property string value
+        property color iconTint: theme.accent
+
+        Layout.fillWidth: true
+        Layout.preferredHeight: 70
+        radius: 16
+        color: Qt.rgba(theme.surface.r, theme.surface.g, theme.surface.b, 0.4)
+        border.color: Qt.rgba(theme.fg.r, theme.fg.g, theme.fg.b, 0.08)
+        border.width: 1
+
+        RowLayout {
+            anchors.fill: parent
+            anchors.margins: 16
+            spacing: 16
+
+            Rectangle {
+                Layout.preferredWidth: 40
+                Layout.preferredHeight: 40
+                radius: 12
+                color: Qt.rgba(iconTint.r, iconTint.g, iconTint.b, 0.15)
+
+                Text {
+                    anchors.centerIn: parent
+                    text: icon
+                    font.family: "Symbols Nerd Font"
+                    font.pixelSize: 18
+                    color: iconTint
+                }
+            }
+
+            ColumnLayout {
+                Layout.fillWidth: true
+                Layout.alignment: Qt.AlignVCenter
+                spacing: 2
+                
+                Text {
+                    text: label
+                    color: theme.subtext
+                    font.pixelSize: 11
+                    opacity: 0.8
+                }
+                
+                Text {
+                    text: value
+                    color: theme.fg
+                    font.pixelSize: 14
+                    font.bold: true
+                }
+            }
+        }
+    }
 }
