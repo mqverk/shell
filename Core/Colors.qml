@@ -3,29 +3,58 @@ import Quickshell
 import Quickshell.Io
 
 Item {
-    readonly property color bg: loadedColors ? (loadedColors.surface.dark || "#1a1b26") : "#1a1b26"
-    readonly property color fg: loadedColors ? (loadedColors.on_surface.dark || "#a9b1d6") : "#a9b1d6"
-    readonly property color muted: loadedColors ? (loadedColors.surface_variant.dark || "#444b6a") : "#444b6a"
-    readonly property color cyan: "#0db9d7" // Keep hardcoded or map to similar
-    readonly property color purple: "#ad8ee6"
-    readonly property color red: loadedColors ? (loadedColors.error.dark || "#f7768e") : "#f7768e"
-    readonly property color yellow: "#e0af68"
-    readonly property color blue: loadedColors ? (loadedColors.primary.dark || "#7aa2f7") : "#7aa2f7"
-    readonly property color green: "#9ece6a"
-    readonly property color surface: loadedColors ? (loadedColors.surface_container.dark || "#24283b") : "#24283b"
-    readonly property color border: loadedColors ? (loadedColors.outline.dark || "#414868") : "#414868"
-    readonly property color subtext: loadedColors ? (loadedColors.on_surface_variant.dark || "#565f89") : "#565f89"
-    readonly property color orange: "#ff9e64"
-    readonly property color teal: loadedColors ? (loadedColors.secondary.dark || "#73daca") : "#73daca"
-    readonly property color accent: loadedColors ? (loadedColors.primary.dark || "#7aa2f7") : "#7aa2f7"
-    readonly property color text: fg
-    readonly property color tile: loadedColors ? (loadedColors.surface_variant.dark || "#444b6a") : "#444b6a"
-    readonly property color tileActive: loadedColors ? (loadedColors.secondary_container.dark || "#3b4261") : "#3b4261"
-    readonly property color accentActive: accent
-    readonly property color urgent: red
-    readonly property color secondary: subtext // Overriding the 'secondary' map if needed, or just alias to what Views expect
-    readonly property color iconMuted: subtext
-    readonly property color red_dim: Qt.rgba(red.r, red.g, red.b, 0.1)
+    property color bg: loadedColors ? (loadedColors.surface.dark || "#1a1b26") : "#1a1b26"
+    Behavior on bg { ColorAnimation { duration: 200 } }
+    
+    property color fg: loadedColors ? (loadedColors.on_surface.dark || "#a9b1d6") : "#a9b1d6"
+    Behavior on fg { ColorAnimation { duration: 200 } }
+    
+    property color muted: loadedColors ? (loadedColors.surface_variant.dark || "#444b6a") : "#444b6a"
+    Behavior on muted { ColorAnimation { duration: 200 } }
+    
+    property color cyan: "#0db9d7"
+    property color purple: "#ad8ee6"
+    
+    property color red: loadedColors ? (loadedColors.error.dark || "#f7768e") : "#f7768e"
+    Behavior on red { ColorAnimation { duration: 200 } }
+    
+    property color yellow: "#e0af68"
+    
+    property color blue: loadedColors ? (loadedColors.primary.dark || "#7aa2f7") : "#7aa2f7"
+    Behavior on blue { ColorAnimation { duration: 200 } }
+    
+    property color green: "#9ece6a"
+    
+    property color surface: loadedColors ? (loadedColors.surface_container.dark || "#24283b") : "#24283b"
+    Behavior on surface { ColorAnimation { duration: 200 } }
+    
+    property color border: loadedColors ? (loadedColors.outline.dark || "#414868") : "#414868"
+    Behavior on border { ColorAnimation { duration: 200 } }
+    
+    property color subtext: loadedColors ? (loadedColors.on_surface_variant.dark || "#565f89") : "#565f89"
+    Behavior on subtext { ColorAnimation { duration: 200 } }
+    
+    property color orange: "#ff9e64"
+    
+    property color teal: loadedColors ? (loadedColors.secondary.dark || "#73daca") : "#73daca"
+    Behavior on teal { ColorAnimation { duration: 200 } }
+    
+    property color accent: loadedColors ? (loadedColors.primary.dark || "#7aa2f7") : "#7aa2f7"
+    Behavior on accent { ColorAnimation { duration: 200 } }
+    
+    property color text: fg
+    
+    property color tile: loadedColors ? (loadedColors.surface_variant.dark || "#444b6a") : "#444b6a"
+    Behavior on tile { ColorAnimation { duration: 200 } }
+    
+    property color tileActive: loadedColors ? (loadedColors.secondary_container.dark || "#3b4261") : "#3b4261"
+    Behavior on tileActive { ColorAnimation { duration: 200 } }
+    
+    property color accentActive: accent
+    property color urgent: red
+    property color secondary: subtext
+    property color iconMuted: subtext
+    property color red_dim: Qt.rgba(red.r, red.g, red.b, 0.1)
     property var loadedColors: null
 
     function refreshColors() {
