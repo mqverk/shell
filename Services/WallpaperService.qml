@@ -200,7 +200,17 @@ Singleton {
                 if (selectedColor) {
                     var hex = selectedColor.toString().replace("#", "");
                     console.log("[WallpaperService] Applying OpenRGB color (Source/Accent):", hex);
-                    keyboardRgb.command = ["openrgb", "--device", "0", "--color", hex];
+                    
+                    var args = ["openrgb"];
+                    var devices = Config.openRgbDevices;
+                    for (var i = 0; i < devices.length; i++) {
+                        args.push("--device");
+                        args.push(devices[i].toString());
+                        args.push("--color");
+                        args.push(hex);
+                    }
+                    
+                    keyboardRgb.command = args;
                     keyboardRgb.running = true;
                 } else {
                     console.error("[WallpaperService] Could not extract color from colors.json");
